@@ -1,6 +1,13 @@
 # 🚀 GitHub Setup Guide
 
-## Step 1: Install Git (if not already installed)
+## Step 1: Install Prerequisites
+
+### **Install Python (if not already installed)**
+- **Windows**: Download from [python.org](https://www.python.org/downloads/) - **IMPORTANT**: Check "Add Python to PATH"
+- **macOS**: `brew install python` or download from python.org
+- **Linux**: `sudo apt install python3 python3-pip` (Ubuntu/Debian)
+
+### **Install Git (if not already installed)**
 
 ### **Windows:**
 1. Download Git from [https://git-scm.com/download/win](https://git-scm.com/download/win)

@@ -9,6 +9,7 @@ This server enables AI assistants like Claude to create, search, and manage Ever
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Sequence
 from urllib.parse import quote
@@ -24,12 +25,19 @@ from mcp.types import (
     Content
 )
 
+# Developer Mode Flag
+DEV_MODE = os.getenv("DEV_MODE", "false").lower() == "true"
+
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+log_level = logging.DEBUG if DEV_MODE else logging.INFO
+logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("evernote-mcp")
 
+if DEV_MODE:
+    logger.warning("🚀 Developer Mode is ENABLED. Verbose logging and dev tools are active.")
+
 # Initialize the MCP server
-app = FastMCP("Evernote MCP Server", version="1.0.0")
+app = FastMCP("Evernote MCP Server", version="1.1.0")
 
 # Configuration
 EVERNOTE_SANDBOX_HOST = "sandbox.evernote.com"
@@ -49,19 +57,33 @@ class EvernoteClient:
             "Authorization": f"Bearer {self.developer_token}",
             "Content-Type": "application/json"
         }
-        
+
+        logger.debug(f"Making {method} request to {self.base_url}{endpoint}")
+        if data:
+            logger.debug(f"Request data: {json.dumps(data, indent=2)}")
+
         async with httpx.AsyncClient() as client:
-            if method.upper() == "GET":
-                response = await client.get(f"{self.base_url}{endpoint}", headers=headers)
-            elif method.upper() == "POST":
-                response = await client.post(f"{self.base_url}{endpoint}", headers=headers, json=data)
-            elif method.upper() == "PUT":
-                response = await client.put(f"{self.base_url}{endpoint}", headers=headers, json=data)
-            else:
-                raise ValueError(f"Unsupported HTTP method: {method}")
-                
-            response.raise_for_status()
-            return response.json()
+            try:
+                if method.upper() == "GET":
+                    response = await client.get(f"{self.base_url}{endpoint}", headers=headers)
+                elif method.upper() == "POST":
+                    response = await client.post(f"{self.base_url}{endpoint}", headers=headers, json=data)
+                elif method.upper() == "PUT":
+                    response = await client.put(f"{self.base_url}{endpoint}", headers=headers, json=data)
+                else:
+                    raise ValueError(f"Unsupported HTTP method: {method}")
+
+                logger.debug(f"Response Status: {response.status_code}")
+                logger.debug(f"Response Body: {response.text}")
+
+                response.raise_for_status()
+                return response.json()
+            except httpx.HTTPStatusError as e:
+                logger.error(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
+                raise
+            except Exception as e:
+                logger.error(f"An unexpected error occurred during request: {e}")
+                raise
     
     async def search_notes(self, query: str, notebook_guid: Optional[str] = None, max_notes: int = 50) -> List[Dict]:
         """Search notes using Evernote's search syntax"""
@@ -347,7 +369,8 @@ async def create_note(
     title: str,
     content: str,
     notebook_name: Optional[str] = None,
-    tags: Optional[List[str]] = None
+    tags: Optional[List[str]] = None,
+    dry_run: bool = False
 ) -> Dict[str, Any]:
     """
     Create a new note in Evernote.
@@ -357,6 +380,7 @@ async def create_note(
         content: The content of the note (plain text or HTML)
         notebook_name: Optional notebook name (uses default if not specified)
         tags: Optional list of tag names
+        dry_run: If True, the operation is a dry run and no changes are made
     
     Returns:
         Created note information
@@ -364,6 +388,10 @@ async def create_note(
     if not evernote_client:
         return {"error": "Evernote client not initialized. Please provide developer token."}
     
+    if DEV_MODE and dry_run:
+        logger.info(f"DRY RUN: Would create note titled '{title}' in notebook '{notebook_name or 'default'}' with tags {tags}")
+        return {"status": "success (dry run)", "action": "create_note", "details": "Note was not actually created."}
+
     try:
         # If notebook_name is provided, get its GUID
         notebook_guid = None
@@ -399,7 +427,8 @@ async def update_note(
     note_guid: str,
     title: Optional[str] = None,
     content: Optional[str] = None,
-    tags: Optional[List[str]] = None
+    tags: Optional[List[str]] = None,
+    dry_run: bool = False
 ) -> Dict[str, Any]:
     """
     Update an existing note in Evernote.
@@ -409,23 +438,28 @@ async def update_note(
         title: New title (optional)
         content: New content (optional)
         tags: New list of tags (optional)
+        dry_run: If True, the operation is a dry run and no changes are made
     
     Returns:
         Updated note information
     """
     if not evernote_client:
-        return {"error": "Evernote client not initialized. Please provide developer token."}
-    
+        return {"status": "error", "message": "Evernote client not initialized. Please use configure_evernote first."}
+
+    if DEV_MODE and dry_run:
+        logger.info(f"DRY RUN: Would update note with GUID {note_guid} with title='{title}', content='...', tags={tags}")
+        return {"status": "success (dry run)", "action": "update_note", "details": "Note was not actually updated."}
+
     try:
-        note = await evernote_client.update_note(note_guid, title, content, tags)
-        if not note:
+        updated_note = await evernote_client.update_note(note_guid, title, content, tags)
+        if not updated_note:
             return {"error": f"Failed to update note with GUID {note_guid}"}
         
         return {
-            "guid": note.get("guid"),
-            "title": note.get("title"),
-            "updated": datetime.fromtimestamp(note.get("updated", 0) / 1000).isoformat() if note.get("updated") else None,
-            "tag_names": note.get("tagNames", []),
+            "guid": updated_note.get("guid"),
+            "title": updated_note.get("title"),
+            "updated": datetime.fromtimestamp(updated_note.get("updated", 0) / 1000).isoformat() if updated_note.get("updated") else None,
+            "tag_names": updated_note.get("tagNames", []),
             "success": True,
             "message": f"Note updated successfully"
         }
@@ -495,17 +529,60 @@ async def configure_evernote(developer_token: str, use_sandbox: bool = True) -> 
         evernote_client = None
         return {"error": f"Failed to configure Evernote client: {str(e)}"}
 
+# --- Developer Tools (only enabled in DEV_MODE) ---
+if DEV_MODE:
+    @app.tool()
+    async def dev_get_config() -> Dict[str, Any]:
+        """[DEV] Returns the current server configuration and connection status."""
+        if not evernote_client:
+            return {"status": "error", "message": "Evernote client not initialized."}
+        
+        config_data = {
+            "status": "success",
+            "developer_mode": True,
+            "host": evernote_client.host,
+            "is_sandbox": evernote_client.host == EVERNOTE_SANDBOX_HOST,
+            "token_loaded": bool(evernote_client.developer_token),
+        }
+        if evernote_client.developer_token:
+            config_data["token_preview"] = f"{evernote_client.developer_token[:4]}...{evernote_client.developer_token[-4:]}"
+        
+        return config_data
+
+    @app.tool()
+    async def dev_clear_config() -> Dict[str, Any]:
+        """[DEV] Clears the current Evernote configuration, forcing re-authentication."""
+        global evernote_client
+        evernote_client = None
+        logger.info("Developer action: Evernote configuration cleared.")
+        return {"status": "success", "message": "Configuration cleared."}
+
+    @app.tool()
+    async def dev_api_test() -> Dict[str, Any]:
+        """[DEV] Performs a live API test to check connectivity and permissions."""
+        if not evernote_client:
+            return {"status": "error", "message": "Evernote client not initialized. Use configure_evernote first."}
+        try:
+            # A simple, read-only call to test authentication
+            user_info = await evernote_client._make_request("GET", "/user")
+            return {
+                "status": "success",
+                "message": "API connection successful.",
+                "user": {
+                    "username": user_info.get("username"),
+                    "id": user_info.get("id"),
+                    "name": user_info.get("name"),
+                }
+            }
+        except Exception as e:
+            return {"status": "error", "message": f"API test failed: {str(e)}"}
+
 if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="Evernote MCP Server")
-    parser.add_argument("--port", type=int, default=3000, help="Port to run the server on")
-    parser.add_argument("--host", type=str, default="localhost", help="Host to run the server on")
-    
-    args = parser.parse_args()
-    
-    logger.info(f"Starting Evernote MCP Server on {args.host}:{args.port}")
+    logger.info("Starting Evernote MCP Server")
     logger.info("Remember to configure your Evernote developer token using the configure_evernote tool")
     
-    # Run the FastMCP server
+    if DEV_MODE:
+        logger.info("🔧 Developer Mode is active - additional tools and verbose logging enabled")
+    
+    # Run the FastMCP server using stdio transport (for Claude Desktop integration)
     app.run(transport="stdio") 

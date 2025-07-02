@@ -25,6 +25,10 @@ A **Model Context Protocol (MCP) server** that enables AI assistants like Claude
 
 ## 🚀 Quick Installation
 
+### **Prerequisites**
+- **Python 3.8+** (if not installed, see [Python Installation Guide](#python-installation) below)
+- **Git** (for cloning the repository)
+
 ### **Option 1: One-Click Install (Recommended)**
 
 ```bash
@@ -45,6 +49,33 @@ cd Evernote-MCP
 
 # Install dependencies
 pip install -r requirements.txt
+```
+
+### **Python Installation**
+
+If you don't have Python installed:
+
+**Windows:**
+1. Download Python from [python.org](https://www.python.org/downloads/)
+2. **IMPORTANT**: Check "Add Python to PATH" during installation
+3. Restart your terminal/PowerShell after installation
+4. Test: `python --version`
+
+**macOS:**
+```bash
+# Using Homebrew (recommended)
+brew install python
+
+# Or download from python.org
+```
+
+**Linux:**
+```bash
+# Ubuntu/Debian
+sudo apt update && sudo apt install python3 python3-pip
+
+# CentOS/RHEL
+sudo yum install python3 python3-pip
 ```
 
 ## 🔑 Get Your Evernote API Key
@@ -176,11 +207,30 @@ cd Evernote-MCP
 python test_server.py
 ```
 
+**Pre-flight Check:**
+```bash
+# Verify Python is working
+python --version
+
+# Check dependencies
+python -c "import httpx; print('✅ httpx available')"
+
+# Test MCP server loads
+python -c "from evernote_mcp_server import app; print('✅ MCP server loads successfully')"
+```
+
 This will test:
 - ✅ Python dependencies
 - ✅ MCP server functionality  
 - ✅ Claude Desktop configuration
 - ✅ Evernote API connection (if you provide your token)
+
+### **Automated Testing (for CI/CD)**
+The test script can be run non-interactively, perfect for automated workflows:
+```bash
+python test_server.py --non-interactive --token "YOUR_EVERNOTE_TOKEN"
+```
+The script will exit with a non-zero status code if any tests fail.
 
 ### **Manual Verification**
 
@@ -390,4 +440,65 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 **Made with ❤️ for the AI community**
 
-**Star ⭐ this repo if it helps you! Happy Note-Taking with AI! 🤖📚** 
+**Star ⭐ this repo if it helps you! Happy Note-Taking with AI! 🤖📚**
+
+## 🛠️ Developer Mode
+
+For advanced users and developers, a **Developer Mode** can be enabled to access extra debugging tools and verbose logging.
+
+**How to Enable:**
+Set the `DEV_MODE` environment variable to `true`. This can be done in your `claude_desktop_config.json` or directly in your shell.
+
+**Example `claude_desktop_config.json`:**
+```json
+{
+  "mcpServers": {
+    "evernote": {
+      "command": "python",
+      "args": ["/full/path/to/Evernote-MCP/evernote_mcp_server.py"],
+      "env": {
+        "DEV_MODE": "true"
+      }
+    }
+  }
+}
+```
+
+### Developer Features
+
+*   **📝 Verbose Logging**: See detailed API requests and responses (including payloads) in the server console.
+*   **🛡️ Dry Run Mode**: Add `dry_run=True` to `create_note` or `update_note` tool calls to simulate the action without modifying your data. This is great for testing prompts.
+*   **🔧 New Dev Tools**:
+    *   `dev_get_config`: Returns the current server configuration (token status, environment, etc.).
+    *   `dev_clear_config`: Resets the Evernote authentication, useful for switching accounts.
+    *   `dev_api_test`: Performs a live API test to check connectivity and permissions.
+
+## 🧪 Testing Your Installation
+
+### **Quick Test**
+
+Run the built-in test script:
+
+```bash
+cd Evernote-MCP
+python test_server.py
+```
+
+This will test:
+- ✅ Python dependencies
+- ✅ MCP server functionality
+- ✅ Claude Desktop configuration
+- ✅ Evernote API connection (if you provide your token)
+
+### **Automated Testing (for CI/CD)**
+The test script can be run non-interactively, perfect for automated workflows:
+```bash
+python test_server.py --non-interactive --token "YOUR_EVERNOTE_TOKEN"
+```
+The script will exit with a non-zero status code if any tests fail.
+
+### **Manual Verification**
+
+1. **Check Claude Desktop** - Look for "🔧 Evernote" in Claude's available tools
+2. **Test Configuration** - Say: *"Configure Evernote with my token: YOUR_TOKEN"*
+3. **Test Search** - Say: *"Search my Evernote for any note"*
