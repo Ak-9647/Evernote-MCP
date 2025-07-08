@@ -86,4 +86,17 @@ htmlcov/
 
 # User-specific setup files
 user_config.py
-my_token.txt 
+my_token.txt # Environment variables
+.env.local
+.env.*.local
+# Sensitive files
+# Test files with tokens
+test_results_*.json
+mcp_test_results_*.json
+mcp_comprehensive_test_report_*.md
+# Generated HTML files
+*.html
+!README.html
+# Backup files
+*.backup
+*_backup.*

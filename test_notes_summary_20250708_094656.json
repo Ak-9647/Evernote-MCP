@@ -1,0 +1,82 @@
+{
+  "test_session": {
+    "created": "2025-07-08T09:46:56.587471",
+    "token": "9aaadc877a...",
+    "purpose": "MCP Server verification and testing",
+    "total_notes": 5
+  },
+  "notes": [
+    {
+      "filename": "test_note_1_20250708_094656.html",
+      "title": "\ud83d\udd2c Test Note #1 - Meeting Notes",
+      "tags": [
+        "meeting",
+        "work",
+        "team",
+        "test"
+      ],
+      "created": "2025-07-08 09:46:56"
+    },
+    {
+      "filename": "test_note_2_20250708_095156.html",
+      "title": "\ud83d\udca1 Test Note #2 - Project Ideas",
+      "tags": [
+        "ideas",
+        "projects",
+        "brainstorming",
+        "test"
+      ],
+      "created": "2025-07-08 09:51:56"
+    },
+    {
+      "filename": "test_note_3_20250708_095656.html",
+      "title": "\ud83d\udcda Test Note #3 - Learning Resources",
+      "tags": [
+        "learning",
+        "development",
+        "books",
+        "courses",
+        "test"
+      ],
+      "created": "2025-07-08 09:56:56"
+    },
+    {
+      "filename": "test_note_4_20250708_100156.html",
+      "title": "\ud83d\uded2 Test Note #4 - Shopping & Tasks",
+      "tags": [
+        "shopping",
+        "groceries",
+        "tasks",
+        "household",
+        "test"
+      ],
+      "created": "2025-07-08 10:01:56"
+    },
+    {
+      "filename": "test_note_5_20250708_100656.html",
+      "title": "\ud83c\udfa8 Test Note #5 - Creative Writing",
+      "tags": [
+        "writing",
+        "creative",
+        "story",
+        "fiction",
+        "test"
+      ],
+      "created": "2025-07-08 10:06:56"
+    }
+  ],
+  "import_instructions": [
+    "1. Open Evernote desktop application",
+    "2. Go to File \u2192 Import \u2192 HTML files",
+    "3. Select all test note HTML files",
+    "4. Click Import",
+    "5. Verify notes appear in your Evernote account"
+  ],
+  "verification_checklist": [
+    "All 5 test notes imported successfully",
+    "Notes have correct titles and content",
+    "Tags are applied correctly",
+    "Formatting is preserved",
+    "Notes are searchable in Evernote"
+  ]
+}
